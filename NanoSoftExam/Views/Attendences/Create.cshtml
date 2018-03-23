@@ -1,0 +1,118 @@
+﻿@model IEnumerable<NanoSoftExam.Models.StudentList>
+@{
+    ViewBag.Title = "Create";
+
+}
+
+<h2>Student Attendence</h2>
+    @using (Html.BeginForm("StudentAttendenceList", "Reports", FormMethod.Post)) {
+<div class="col-sm-6">
+    <label class="control-label"><b>Date </b></label>
+    <input type="text" name="AttendanceDate" id="AttendanceDate" value="@DateTime.Now.ToString("yyyy-MM-dd")"/>
+    @*<input type="button" value="Search" onclick="location.href=@Url.Action("Index", "Attendences")"/>*@
+</div>
+<div class="col-sm-6" style="text-align:right">
+    <input type="submit" value="Student Attendence List Report" class="btn btn-primary" />
+    @*@Html.ActionLink("Student Attendence List Report", "StudentAttendenceList", "Reports")*@
+</div>
+}
+<table class="table table-bordered table-responsive table-hover" id="attendenceTable">
+    <tr>
+        <th>Student Id </th>
+        <th>First Name </th>
+        <th>Last Name </th>
+        <th>Status</th>
+
+    </tr>
+    @foreach (var d in Model)
+    {
+        <tr>
+            <td>@d.StudentId </td>
+            <td>@d.FirstName</td>
+            <td>@d.LastName</td>
+            <td>
+                <div id="radioDiv">
+                    <div class="radio">
+                        <label><input type="radio" id='present' value="Present" name=@d.StudentId checked=@(d.Status == "Present" ? true: false)>Present</label>
+
+                    </div>
+                    <div class="radio">
+                        <label><input type="radio" id='absent' value="Absent" name=@d.StudentId checked=@(d.Status == "Absent" ? true: false)>Absent</label>
+                    </div>
+                </div>
+               
+</td>
+        </tr>
+    }
+</table>
+
+<input type="button" id="btnSave" value="Save All" class="btn btn-successs"/>
+
+
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+    <script src="~/Scripts/bootstrap.min.js"></script>
+    <script src="~/Scripts/moment.js"></script>
+
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+     
+    <script>
+        $(function () {
+           
+            $("#AttendanceDate").datepicker({
+                dateFormat: 'yy-mm-dd'
+            });
+            $("#AttendanceDate").change(function () {
+                updateGrid();
+            });
+        });
+        
+        
+        function updateGrid() {
+            //$("#checkableGrid").swhgLoad("/Attendance/Attendance?AttendanceDate=" + $("#AttendanceDate").val(), "#checkableGrid");
+            var a = $("#AttendanceDate").val();
+            //debugger;
+            $.ajax({
+                type: "GET",
+                url: '@Url.Action("Create", "Attendences")',
+                contentType: "application/json; charset=utf-8",
+                data: { AttendanceDate: $("#AttendanceDate").val() },
+                success: function (d) {
+                    $('html body').html(d);
+                    $("#AttendanceDate").val(a);
+                }
+            });
+        }
+        $("body").on("click", "#btnSave", function () {
+            //Loop through the Table rows and build a JSON array.
+            var attendences = new Array();
+            $("#attendenceTable TBODY TR").each(function () {
+                var row = $(this);
+                var attendence = {};
+                attendence.StudentId = row.find("TD").eq(0).html();
+                var selectedVal = "";
+                var selected = $("#radioDiv input[type='radio']:checked");
+                if (selected.length > 0) {
+                    selectedVal = selected.val();
+                }
+                attendence.Date = new Date($("#AttendanceDate").val());
+                attendence.Status = selectedVal;
+                attendences.push(attendence);
+            });
+           
+            $.ajax({
+                type: "POST",
+                url: "/Attendences/Attendance",
+                data: JSON.stringify(attendences),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (r) {
+                    alert(r + " record(s) inserted.");
+                }
+            });
+        });
+    </script>
+}
